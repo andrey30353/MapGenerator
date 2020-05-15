@@ -6,6 +6,9 @@ using UnityEngine;
 
 public class Generator : MonoBehaviour
 {
+    [Header("Not set = -1")]
+    [SerializeField] private int seed;
+
     public Vector2Int MapSize = new Vector2Int(10, 10);
 
     public int TileSize = 10;
@@ -14,7 +17,10 @@ public class Generator : MonoBehaviour
 
     public Tile FirstTile;
 
-    public List<Tile> TilePrefabs;   
+    [Range(0.01f , 1f)]
+    [SerializeField] private float spawnDelay = 0.1f;
+
+    public List<Tile> TilePrefabs;
 
     private Tile[,] spawnedTiles;
 
@@ -40,6 +46,9 @@ public class Generator : MonoBehaviour
             StopAllCoroutines();
 
             Clear();
+
+            if (seed != -1)
+                Random.InitState(seed);
             
             StartCoroutine(Generate());
         }
@@ -56,7 +65,7 @@ public class Generator : MonoBehaviour
         {
             if (tile.RotationVariants == RotationVariants.Two)
             {
-                tile.Weight =tile.Weight /2;
+                tile.Weight = tile.Weight / 2;
                 if (tile.Weight < 1)
                     tile.Weight = 1;
 
@@ -120,14 +129,14 @@ public class Generator : MonoBehaviour
                 if (availableTiles.Count == 0)
                     continue;
 
-                var tilePrefab = GetRandomTile(availableTiles);              
+                var tilePrefab = GetRandomTile(availableTiles);
                 var newTile = Instantiate<Tile>(tilePrefab, transform);
                 newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
                 newTile.Spawned = true;
                 // todo скрипт Tile вроде бы не нужен            
                 spawnedTiles[x, y] = newTile;
 
-                yield return new WaitForSeconds(0.1f);
+                yield return new WaitForSeconds(spawnDelay);
             }
         }
     }
@@ -170,7 +179,7 @@ public class Generator : MonoBehaviour
     {
         IEnumerable<Tile> result = TilePrefabs;
         if (colorInfo.RightColor0 != Color.clear)
-        {          
+        {
             result = result.Where(t => t.RightColor0 == colorInfo.RightColor0 && t.RightColor1 == colorInfo.RightColor1);
         }
 
@@ -224,7 +233,7 @@ public class Generator : MonoBehaviour
             if (item != null)
                 Destroy(item.gameObject);
         }
-    }   
+    }
 
     private Tile GetRandomTile(List<Tile> tiles)
     {
@@ -240,13 +249,13 @@ public class Generator : MonoBehaviour
             weightSum += tile.Weight;
         }
 
-        var randomValue = Random.Range(0, weightSum+1);
+        var randomValue = Random.Range(0, weightSum + 1);
 
         var sum = 0f;
         foreach (var tile in tiles)
         {
             sum += tile.Weight;
-            if(randomValue < sum)
+            if (randomValue < sum)
             {
                 return tile;
             }
