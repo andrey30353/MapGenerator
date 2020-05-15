@@ -28,7 +28,7 @@ public class Tile : MonoBehaviour
 
     public RotationVariants RotationVariants;
 
-    public RotationType RotationType;
+   
 
     public TilePaletteData Palette;
 
@@ -42,11 +42,7 @@ public class Tile : MonoBehaviour
     public Color ForwardColor1 => ColorsData?.ForwardColor1 ?? Color.clear;
     public Color BackColor0 => ColorsData?.BackColor0 ?? Color.clear;
     public Color BackColor1 => ColorsData?.BackColor1 ?? Color.clear;
-
-    private void Start()
-    {
-     
-    }    
+       
 
     public void OnValidate()
     {
@@ -65,29 +61,7 @@ public class Tile : MonoBehaviour
     public void Rotate(RotationType rotation)
     {      
         transform.Rotate(Vector3.up, ((int)rotation) * 90);
-        ColorsData = ColorsData.Rotate(rotation);
-        var position = transform.position;
-
-        RotationType = rotation;
-
-        switch (rotation)
-        {
-            case RotationType._0:
-                //transform.rotation = new Vector3(0, newRotation * 90f, 0);
-                //transform.position = new Vector3(position.x - TileSize, position.y, position.z);
-                break;
-            case RotationType._90:               
-                //transform.position = new Vector3(position.x, position.y, position.z + TileSize);              
-                break;
-            case RotationType._180:               
-              //  transform.position = new Vector3(position.x + TileSize, position.y, position.z + TileSize);
-                break;
-            case RotationType._270:
-               // transform.position = new Vector3(position.x + TileSize, position.y, position.z);
-                break;
-            default:
-                break;
-        }  
+        ColorsData = ColorsData.Rotate(rotation); 
     }
 
     [ContextMenu("Назвать")]

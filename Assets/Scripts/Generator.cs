@@ -37,8 +37,10 @@ public class Generator : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
-            Clear();
+            StopAllCoroutines();
 
+            Clear();
+            
             StartCoroutine(Generate());
         }
     }
@@ -118,30 +120,9 @@ public class Generator : MonoBehaviour
                 if (availableTiles.Count == 0)
                     continue;
 
-                var tilePrefab = GetRandomTile(availableTiles);
-                var position = new Vector3(x * TileSize, 0, y * TileSize);
-
+                var tilePrefab = GetRandomTile(availableTiles);              
                 var newTile = Instantiate<Tile>(tilePrefab, transform);
-                var correctPosition = position;
-                switch (tilePrefab.RotationType)
-                {
-                    case RotationType._90:
-                        //correctPosition = new Vector3(position.x, position.y, position.z + TileSize);
-                        break;
-                    case RotationType._180:
-                        ///correctPosition = new Vector3(position.x + TileSize, position.y, position.z + TileSize);
-                        break;
-                    case RotationType._270:
-                        //correctPosition = new Vector3(position.x + TileSize, position.y, position.z);
-                        break;
-
-                      
-                    default:
-                        break;
-                }
-
-                newTile.transform.position = correctPosition;
-
+                newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
                 newTile.Spawned = true;
                 // todo скрипт Tile вроде бы не нужен            
                 spawnedTiles[x, y] = newTile;
@@ -249,6 +230,8 @@ public class Generator : MonoBehaviour
     {
         if (tiles.Count == 0)
             throw new System.ArgumentException($"{nameof(tiles)}.Count = 0");
+
+        //return tiles[Random.Range(0, tiles.Count)];
 
         // c учетом веса
         var weightSum = 0;

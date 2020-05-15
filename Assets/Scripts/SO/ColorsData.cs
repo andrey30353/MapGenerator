@@ -4,10 +4,10 @@ using UnityEngine.Serialization;
 
 public enum RotationType
 {
-    _0,
-    _90,
-    _180,
-    _270
+    _0 = 0,
+    _90 = 1,
+    _180 = 2,
+    _270 = 3
 }
 
 
