@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -15,6 +17,7 @@ public enum RotationType
 public class ColorsData : ScriptableObject
 {
     //[FormerlySerializedAs("ForwardColor")]
+    [Header("Цвета для соединения тайлов")]
     public Color ForwardColor0;
     public Color ForwardColor1;
 
@@ -29,6 +32,9 @@ public class ColorsData : ScriptableObject
     [Space] 
     public Color LeftColor0;
     public Color LeftColor1;
+       
+    [Header("Цвет для генерации по текстуре")]
+    public Color BaseColor;
 
     public ColorsData Rotate(RotationType rotation)
     {
@@ -98,6 +104,39 @@ public class ColorsData : ScriptableObject
             default:
                 throw new ArgumentException("Unknown rotation");
         }
+    }
+
+    [ContextMenu("Цвета в лог")]
+    private void ColorsToLog()
+    {
+        Debug.Log($"Forward = {ForwardColor0}");
+        Debug.Log($"Right = {RightColor0}");
+        Debug.Log($"Back = {BackColor0}");
+        Debug.Log($"Left = {LeftColor0}");  
+    }
+
+    [ContextMenu("Определить основной цвет")]
+    private void DefineBaseColor()
+    {
+        var colors = new List<Color>()
+        {
+            ForwardColor0, RightColor0, BackColor0, LeftColor0
+        };
+
+        var colorCounts = new Dictionary<Color, int>();
+        foreach (var color in colors)
+        {
+            if (colorCounts.ContainsKey(color))
+                colorCounts[color]++;
+            else
+                colorCounts[color] = 1;
+
+        }
+        var max = colorCounts.Max(t => t.Value);
+        // todo
+        var baseColor = colorCounts.FirstOrDefault(t => t.Value == max).Key;
+
+        BaseColor = baseColor;//(ForwardColor0 + RightColor0 + BackColor0 + LeftColor0) / 4;        
     }
 
     private void OnValidate()

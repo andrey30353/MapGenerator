@@ -20,3 +20,4 @@ MonoBehaviour:
   BackColor1: {r: 0, g: 0, b: 0, a: 0}
   LeftColor0: {r: 0, g: 0, b: 0.59607846, a: 1}
   LeftColor1: {r: 0, g: 0, b: 0, a: 0}
+  BaseColor: {r: 0, g: 0, b: 0.59607846, a: 1}

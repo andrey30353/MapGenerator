@@ -157,6 +157,72 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3f40de236fb52784bb386c97b0c5ee59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &288302083
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 288302085}
+  - component: {fileID: 288302084}
+  m_Layer: 0
+  m_Name: GeneratorByTexture
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 4294967295
+  m_IsActive: 1
+--- !u!114 &288302084
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288302083}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 947e75989f57f4d4bb25c476caf97abe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _texture: {fileID: 2800000, guid: 82befaa6520fe964197fcf934e1e6156, type: 3}
+  TileSize: 10
+  seed: 0
+  useWeight: 1
+  RotationVariantsContainer: {fileID: 1258544653}
+  spawnDelay: 0.01
+  _colorTilePriority: []
+  TilePrefabs:
+  - {fileID: 1805588963}
+  - {fileID: 1874738071}
+  - {fileID: 1748725185}
+  - {fileID: 1541484370}
+  - {fileID: 108893503}
+  - {fileID: 1145854942}
+  - {fileID: 686670003}
+  - {fileID: 219711081}
+  - {fileID: 330558687}
+  - {fileID: 1033322936}
+  - {fileID: 1276552325}
+  - {fileID: 766617810}
+  - {fileID: 454381799}
+  - {fileID: 814753076}
+  - {fileID: 1513176215}
+--- !u!4 &288302085
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 288302083}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &330558686 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5210520276922023206, guid: d5da34687c40b8444a158b6d89b306ad,
@@ -522,7 +588,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 4294967295
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1446991702
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -538,7 +604,7 @@ MonoBehaviour:
   MapSize: {x: 10, y: 10}
   TileSize: 10
   seed: 0
-  useWeight: 0
+  useWeight: 1
   RotationVariantsContainer: {fileID: 1258544653}
   spawnDelay: 0.03
   TilePrefabs:
@@ -649,7 +715,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1748725184 stripped
 Transform:
@@ -815,7 +881,7 @@ Transform:
   - {fileID: 1513176214}
   - {fileID: 1258544653}
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &16824282284944120
 PrefabInstance:
@@ -1929,7 +1995,7 @@ PrefabInstance:
     - target: {fileID: 8095761689715476338, guid: 8df42a6a725e2b44a9d3b492cfd5bc38,
         type: 3}
       propertyPath: Weight
-      value: 50
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8095761689715476340, guid: 8df42a6a725e2b44a9d3b492cfd5bc38,
         type: 3}
