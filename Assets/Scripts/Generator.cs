@@ -5,13 +5,14 @@ using System.Linq;
 using UnityEngine;
 
 public class Generator : MonoBehaviour
-{
-    [Header("Not set = -1")]
-    [SerializeField] private int seed;
-
+{   
     public Vector2Int MapSize = new Vector2Int(10, 10);
 
     public int TileSize = 10;
+
+    [Header("Not set = -1")]
+    [SerializeField] private int seed;
+    [SerializeField] private bool useWeight = true;
 
     public Transform RotationVariantsContainer;
 
@@ -23,19 +24,13 @@ public class Generator : MonoBehaviour
     public List<Tile> TilePrefabs;
 
     private Tile[,] spawnedTiles;
-
-    public static Generator Instance { get; private set; }
-
-    private void Awake()
-    {
-        Instance = this;
-    }
-
+      
     // Start is called before the first frame update
     private void Start()
     {
         spawnedTiles = new Tile[MapSize.x, MapSize.y];
-        CreateAllRotationVariants();
+
+        CreateAllRotationVariants(TilePrefabs, TileSize, RotationVariantsContainer);      
     }
 
     // Update is called once per frame
@@ -54,14 +49,14 @@ public class Generator : MonoBehaviour
         }
     }
 
-    private void CreateAllRotationVariants()
+    public static void CreateAllRotationVariants(List<Tile> tilePrefabs, int tileSize, Transform container)
     {
-        var countNewPrefabs = TilePrefabs.Count(tile => tile.RotationVariants == RotationVariants.Two)
-            + TilePrefabs.Count(tile => tile.RotationVariants == RotationVariants.Four) * 3;
+        var countNewPrefabs = tilePrefabs.Count(tile => tile.RotationVariants == RotationVariants.Two)
+            + tilePrefabs.Count(tile => tile.RotationVariants == RotationVariants.Four) * 3;
 
         var newTilePrefabs = new List<Tile>(countNewPrefabs);
         var count = 0;
-        foreach (var tile in TilePrefabs)
+        foreach (var tile in tilePrefabs)
         {
             if (tile.RotationVariants == RotationVariants.Two)
             {
@@ -69,8 +64,8 @@ public class Generator : MonoBehaviour
                 if (tile.Weight < 1)
                     tile.Weight = 1;
 
-                var position = tile.transform.position + Vector3.back * TileSize * 1.5f;
-                var newTilePrefab = Instantiate<Tile>(tile, position, Quaternion.identity, RotationVariantsContainer);
+                var position = tile.transform.position + Vector3.back * tileSize * 1.5f;
+                var newTilePrefab = Instantiate<Tile>(tile, position, Quaternion.identity, container);
                 newTilePrefab.name = tile.name + "_180";
                 newTilePrefab.Rotate(RotationType._180);
                 newTilePrefabs.Add(newTilePrefab);
@@ -85,25 +80,20 @@ public class Generator : MonoBehaviour
 
                 for (int i = 1; i < 4; i++)
                 {
-                    var position = tile.transform.position + Vector3.back * TileSize * 1.5f * i;
+                    var position = tile.transform.position + Vector3.back * tileSize * 1.5f * i;
                     //var newPosition = new Vector3(
                     //    position.x + TileSize * 1.2f * count,
                     //    position.y,
                     //    position.z - TileSize * 1.2f * i);
-                    var newTilePrefab = Instantiate<Tile>(tile, position, Quaternion.identity, RotationVariantsContainer);
+                    var newTilePrefab = Instantiate<Tile>(tile, position, Quaternion.identity, container);
                     newTilePrefab.name = tile.name + (i * 90).ToString();
                     newTilePrefab.Rotate((RotationType)i);
                     newTilePrefabs.Add(newTilePrefab);
                 }
                 count++;
             }
-
-            //foreach (var tile in TilePrefabs.Where(t => t.RotationVariants == RotationVariants.Four))
-            //{
-
-            //}
         }
-        TilePrefabs.AddRange(newTilePrefabs);
+        tilePrefabs.AddRange(newTilePrefabs);
     }
 
     private IEnumerator Generate()
@@ -123,9 +113,8 @@ public class Generator : MonoBehaviour
                 if (FirstTile != null && x == 0 && y == 0)
                     continue;
 
-                var colorsInfo = GetColorsInfo(x, y);
-                var availableTiles = GetTilesWithColors(colorsInfo);
-                Debug.Log($"[{x},{y}] availableTiles.Count {availableTiles.Count}");
+                List<Tile> availableTiles = AvailableTilesHere(x, y);
+                // Debug.Log($"[{x},{y}] availableTiles.Count {availableTiles.Count}");
                 if (availableTiles.Count == 0)
                     continue;
 
@@ -139,6 +128,13 @@ public class Generator : MonoBehaviour
                 yield return new WaitForSeconds(spawnDelay);
             }
         }
+    }
+
+    private List<Tile> AvailableTilesHere(int x, int y)
+    {
+        var colorsInfo = GetColorsInfo(x, y);
+        var availableTiles = GetTilesWithColors(colorsInfo);
+        return availableTiles;
     }
 
     private ColorsData GetColorsInfo(int x, int y)
@@ -201,30 +197,7 @@ public class Generator : MonoBehaviour
         return result.ToList();
     }
 
-    private List<Tile> GetTilesWithColors(Color color, Direction direction)
-    {
-        switch (direction)
-        {
-            case Direction.Right:
-                return TilePrefabs.Where(t => t.RightColor0 == color).ToList();
-
-            case Direction.Left:
-                return TilePrefabs.Where(t => t.LeftColor0 == color).ToList();
-
-            case Direction.Forward:
-                return TilePrefabs.Where(t => t.ForwardColor0 == color).ToList();
-
-            case Direction.Back:
-                return TilePrefabs.Where(t => t.BackColor0 == color).ToList();
-
-            default:
-                throw new System.ArgumentException($"Unknown direction = {direction}");
-        }
-
-    }
-
-
-
+   
 
     private void Clear()
     {
