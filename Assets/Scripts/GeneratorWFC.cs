@@ -55,7 +55,7 @@ public class GeneratorWFC : MonoBehaviour
     private void /*IEnumerator*/ Generate()
     {
         possibleTiles = new List<Tile>[MapSize.x, MapSize.y];
-          
+
         for (int x = 0; x < MapSize.x; x++)
         {
             for (int y = 0; y < MapSize.y; y++)
@@ -71,34 +71,44 @@ public class GeneratorWFC : MonoBehaviour
         recalcPossibleTilesQueue.Clear();
         AddNeighborsToQueue(centerPosition);
 
-        var success = GenerateAllPossibleTiles();      
-        /*return*/ PlaceAllTiles();
+        var success = GenerateAllPossibleTiles();
+        /*return*/
+        PlaceAllTiles();
     }
 
-    private List<Tile> AvailableTilesHere(int x, int y, List<Tile> variants)
-    {      
-        IEnumerable<Tile> result = variants;
+    private bool IsTilePossible(int x, int y, Tile tile)
+    {
+        // тайлы сзади        
         if (y - 1 >= 0 && possibleTiles[x, y - 1].Count != 0)
         {
-            result = result.Where(t => possibleTiles[x, y - 1].Any(v=> t.BackColor0 == v.ForwardColor0 && t.BackColor1 == v.ForwardColor1));            
+            // тайл должен подходить хотя бы к одному варианту
+            var isPossible = possibleTiles[x, y - 1].Any(t => tile.BackColor0 == t.ForwardColor0 && tile.BackColor1 == t.ForwardColor1);
+            if (!isPossible)
+                return false;
         }
 
         if (y + 1 < MapSize.y && possibleTiles[x, y + 1].Count != 0)
         {
-            result = result.Where(t => possibleTiles[x, y + 1].Any(v => t.ForwardColor0 == v.BackColor0 && t.ForwardColor1 == v.BackColor1));
+            var isPossible = possibleTiles[x, y + 1].Any(t => tile.ForwardColor0 == t.BackColor0 && tile.ForwardColor1 == t.BackColor1);
+            if (!isPossible)
+                return false;
         }
 
         if (x - 1 >= 0 && possibleTiles[x - 1, y].Count != 0)
         {
-            result = result.Where(t => possibleTiles[x - 1, y].Any(v => t.LeftColor0 == v.RightColor0 && t.LeftColor1 == v.RightColor1));
+            var isPossible = possibleTiles[x - 1, y].Any(t => tile.LeftColor0 == t.RightColor0 && tile.LeftColor1 == t.RightColor1);
+            if (!isPossible)
+                return false;
         }
 
         if (x + 1 < MapSize.x && possibleTiles[x + 1, y].Count != 0)
         {
-            result = result.Where(t => possibleTiles[x + 1, y].Any(v => t.RightColor0 == v.LeftColor0 && t.RightColor1 == v.LeftColor1));
-        } 
+            var isPossible = possibleTiles[x + 1, y].Any(t => tile.RightColor0 == t.LeftColor0 && tile.RightColor1 == t.LeftColor1);
+            if (!isPossible)
+                return false;
+        }
 
-        return result.ToList();
+        return true;
     }
 
     private bool GenerateAllPossibleTiles()
@@ -116,46 +126,32 @@ public class GeneratorWFC : MonoBehaviour
             while (recalcPossibleTilesQueue.Count > 0 && innerIteration++ < maxInnerIteration)
             {
                 var position = recalcPossibleTilesQueue.Dequeue();
-                //if (position.x == 0 || position.x == MapSize.x - 1
-                //    || position.y == 0 || position.y == MapSize.y - 1)
-                //{
-                //    continue;
-                //}
 
                 var possibleTilesHere = possibleTiles[position.x, position.y];
-                var possibleTilesHereNew = AvailableTilesHere(position.x, position.y, possibleTilesHere);
+                int countRemoved = possibleTilesHere.RemoveAll(t => !IsTilePossible(position.x, position.y, t));
 
-                //Debug.Log($"Was {possibleTilesHere.Count }; now {possibleTilesHereNew.Count}");
-                // обновляем возможные значения
-                possibleTiles[position.x, position.y] = possibleTilesHereNew;
+                if (countRemoved > 0)
+                    AddNeighborsToQueue(position);          
 
-                if (possibleTilesHere.Count != possibleTilesHereNew.Count)
+                if (possibleTilesHere.Count == 0)
                 {
+                    Debug.LogError("possibleTilesHereNew.Count = 0");
+                    // обновляем по новой, мб выйдет другой вариант
+                    possibleTilesHere.AddRange(TilePrefabs);
+                    if (position.x + 1 < MapSize.x)
+                        possibleTiles[position.x + 1, position.y] = new List<Tile>(TilePrefabs);
+
+                    if (position.x - 1 >= 0)
+                        possibleTiles[position.x - 1, position.y] = new List<Tile>(TilePrefabs);
+
+                    if (position.y + 1 < MapSize.y)
+                        possibleTiles[position.x, position.y + 1] = new List<Tile>(TilePrefabs);
+
+                    if (position.y - 1 >= 0)
+                        possibleTiles[position.x, position.y - 1] = new List<Tile>(TilePrefabs);
+
                     AddNeighborsToQueue(position);
-
-                    if (possibleTilesHereNew.Count == 0)
-                    {
-                        Debug.LogError("possibleTilesHereNew.Count = 0");
-                        // обновляем по новой, мб выйдет другой вариант
-                        possibleTilesHereNew.AddRange(TilePrefabs);
-                        if(position.x + 1 < MapSize.x)
-                            possibleTiles[position.x + 1, position.y] = new List<Tile>(TilePrefabs);
-
-                        if (position.x -1  >= 0)
-                            possibleTiles[position.x - 1, position.y] = new List<Tile>(TilePrefabs);
-
-                        if (position.y + 1 < MapSize.y)
-                            possibleTiles[position.x, position.y + 1] = new List<Tile>(TilePrefabs);
-
-                        if (position.y - 1 >= 0)
-                            possibleTiles[position.x, position.y - 1] = new List<Tile>(TilePrefabs);
-
-                        AddNeighborsToQueue(position);
-                        backtracks++;
-                    }
-  
-
-                                   
+                    backtracks++;
                 }
             }
 
@@ -190,7 +186,7 @@ public class GeneratorWFC : MonoBehaviour
         Debug.Log($"Failed, run out of iterations with {backtracks} backtracks");
         return false;
     }
-
+    
     private void/*IEnumerator*/ PlaceAllTiles()
     {
         for (int x = 0; x < MapSize.x; x++)
@@ -199,12 +195,12 @@ public class GeneratorWFC : MonoBehaviour
             {
                 // здесь 
                 var availableTiles = possibleTiles[x, y];
-               // Debug.Log($"[{x},{y}] availableTiles.Count {availableTiles.Count}");
+                // Debug.Log($"[{x},{y}] availableTiles.Count {availableTiles.Count}");
 
                 if (availableTiles.Count == 0)
                     continue;
 
-                var tilePrefab = GetRandomTile(availableTiles);               
+                var tilePrefab = GetRandomTile(availableTiles);
 
                 var newTile = Instantiate<Tile>(tilePrefab, transform);
                 newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
@@ -212,7 +208,7 @@ public class GeneratorWFC : MonoBehaviour
                 // todo скрипт Tile вроде бы не нужен            
                 spawnedTiles[x, y] = newTile;
 
-               // yield return new WaitForSeconds(spawnDelay);
+                // yield return new WaitForSeconds(spawnDelay);
             }
         }
     }
