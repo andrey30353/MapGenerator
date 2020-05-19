@@ -201,6 +201,7 @@ public class GeneratorByTexture : MonoBehaviour
             if (item != null)
                 Destroy(item.gameObject);
         }
+        spawnedTiles = new Tile[MapSize.x, MapSize.y];
     }
 
     private Tile GetRandomTile(List<Tile> tiles)

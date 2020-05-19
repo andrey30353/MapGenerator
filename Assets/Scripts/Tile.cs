@@ -27,12 +27,12 @@ public class Tile : MonoBehaviour
     public ColorsData ColorsData;
 
     public RotationVariants RotationVariants;
-
-   
-
+      
     public TilePaletteData Palette;
 
     public bool Spawned = false;
+
+    public bool Predefined = false;
 
     public Color RightColor0 => ColorsData?.RightColor0 ?? Color.clear;
     public Color RightColor1 => ColorsData?.RightColor1 ?? Color.clear;

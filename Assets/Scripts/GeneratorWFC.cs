@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 public class GeneratorWFC : MonoBehaviour
@@ -27,12 +28,20 @@ public class GeneratorWFC : MonoBehaviour
 
     private Queue<Vector2Int> recalcPossibleTilesQueue = new Queue<Vector2Int>();
 
+    private int placedTilesCount = 0;
+    private int needPlaceCount;
+
+    private Tile[] predefinedTiles;
+
     // Start is called before the first frame update
     private void Start()
     {
         spawnedTiles = new Tile[MapSize.x, MapSize.y];
 
         Generator.CreateAllRotationVariants(TilePrefabs, TileSize, RotationVariantsContainer);
+
+        predefinedTiles = GetComponentsInChildren<Tile>(false);
+        CorrectColorsDataForPredefinedTiles(predefinedTiles);
     }
 
     // Update is called once per frame
@@ -40,40 +49,171 @@ public class GeneratorWFC : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.R))
         {
-            //StopAllCoroutines();
+            StopAllCoroutines();
 
             Clear();
-
-            if (seed != -1)
-                UnityEngine.Random.InitState(seed);
-
-            //StartCoroutine(Generate());
-            Generate();
+               
+            StartCoroutine(Generate());
+            // Generate();
         }
     }
 
-    private void /*IEnumerator*/ Generate()
+    private IEnumerator Generate()
     {
-        possibleTiles = new List<Tile>[MapSize.x, MapSize.y];
+        if (seed != -1)
+            UnityEngine.Random.InitState(seed);
 
-        for (int x = 0; x < MapSize.x; x++)
+        ProcessPredefinedTiles();
+
+        if (placedTilesCount == 0)
         {
-            for (int y = 0; y < MapSize.y; y++)
+            var centerTile = GetRandomTile(TilePrefabs);
+            var centerPosition = new Vector2Int(MapSize.x / 2, MapSize.y / 2);
+            possibleTiles[centerPosition.x, centerPosition.y] = new List<Tile> { centerTile };
+
+            PlaceTile(centerPosition.x, centerPosition.y, centerTile);            
+            AddNeighborsToQueue(centerPosition);
+        }       
+
+        yield return GenerateAllPossibleTiles();      
+    }
+
+    
+
+    private IEnumerator GenerateAllPossibleTiles()
+    {
+        var maxIterations = MapSize.x * MapSize.y;
+        var iterations = 0;
+     
+        while (placedTilesCount < needPlaceCount ||  iterations < maxIterations)
+        {
+            // Debug.Log($"placed/need = { placedTilesCount} / {needPlaceCount}");
+            var maxInnerIteration = 500;
+            var innerIteration = 0;
+
+            while (recalcPossibleTilesQueue.Count > 0 && innerIteration++ < maxInnerIteration)
             {
-                possibleTiles[x, y] = new List<Tile>(TilePrefabs);
+                var position = recalcPossibleTilesQueue.Dequeue();
+
+                var possibleTilesHere = possibleTiles[position.x, position.y];               
+                int countRemoved = possibleTilesHere.RemoveAll(t => !IsTilePossible(position.x, position.y, t));
+
+                // TODO:
+                if (possibleTilesHere.Count == 0)
+                {
+                    // Зашли в тупик
+                    Debug.LogError("Не получилось собрать карту");
+                    yield break;
+                }
+
+                if (possibleTilesHere.Count == 1)
+                {
+                    // Debug.Log("1 tile");
+                    PlaceTile(position.x, position.y, possibleTilesHere[0]);
+                }
+
+                if (countRemoved > 0)
+                    AddNeighborsToQueue(position);               
             }
+            // TODO: del
+            // LogSpawnPossibleVariants();
+            // LogPossibleVariants();
+
+            if (innerIteration == maxInnerIteration)
+                break;
+
+            // координаты с минимальной энтропией
+            var minEntropyPosition = DefineMinEntropyPosition(out var minEntropy);
+            // Debug.Log("minEntropyPosition  = " + minEntropyPosition);
+            
+            if (minEntropy == 0)
+            {
+                Debug.Log($"Generated for {iterations} iterations");
+                yield break;//true;
+            }
+
+            var tileCollapse = GetRandomTile(possibleTiles[minEntropyPosition.x, minEntropyPosition.y]);
+            possibleTiles[minEntropyPosition.x, minEntropyPosition.y] = new List<Tile>() { tileCollapse };
+
+            PlaceTile(minEntropyPosition.x, minEntropyPosition.y, tileCollapse);
+
+            AddNeighborsToQueue(minEntropyPosition);
+
+            iterations++;
+
+            yield return new WaitForSeconds(spawnDelay);
+        }
+        Debug.Log($"Failed, run out of iterations {iterations}");
+        // return false;
+    }
+
+    // TODO
+    private void ProcessPredefinedTiles()
+    {     
+        foreach (var tile in predefinedTiles)
+        {           
+            tile.Predefined = true;
+
+            var positionX = (int)tile.transform.position.x / TileSize;
+            var positionY = (int)tile.transform.position.z / TileSize;
+
+            possibleTiles[positionX, positionY] = new List<Tile>() { tile };
+            spawnedTiles[positionX, positionY] = tile;
+            tile.Spawned = true;            
+
+            placedTilesCount++;
         }
 
-        var centerTile = GetRandomTile(TilePrefabs);
-        var centerPosition = new Vector2Int(MapSize.x / 2, MapSize.y / 2);
-        possibleTiles[centerPosition.x, centerPosition.y] = new List<Tile> { centerTile };
+        foreach (var tile in predefinedTiles)
+        {
+            var positionX = (int)tile.transform.position.x / TileSize;
+            var positionY = (int)tile.transform.position.z / TileSize;
 
-        recalcPossibleTilesQueue.Clear();
-        AddNeighborsToQueue(centerPosition);
+            AddNeighborsToQueue(new Vector2Int(positionX, positionY));
+        }       
+    }
 
-        var success = GenerateAllPossibleTiles();
-        /*return*/
-        PlaceAllTiles();
+    private void CorrectColorsDataForPredefinedTiles(Tile[] predefinedTiles)
+    {
+        foreach (var tile in predefinedTiles)
+        {
+            // Исправить данные о цвете, для повернутых тайлов            
+            var angleY = Mathf.RoundToInt(tile.transform.eulerAngles.y);
+            if (angleY != 0)
+            {
+              //  Debug.Log("angleY = " + angleY);
+                var rotationType = AngleToRotationType(angleY);
+                tile.ColorsData = tile.ColorsData.Rotate(rotationType);
+            }
+        }
+    }
+
+    private RotationType AngleToRotationType(int angleY)
+    {
+        if (angleY == 0)
+            return RotationType._0;
+
+        if (angleY == 90)
+            return RotationType._90;
+
+        if (angleY == 180)
+            return RotationType._180;
+
+        if (angleY == 270)
+            return RotationType._270;
+
+        throw new System.ArgumentException($"{nameof(angleY)} should be 0/90/180/270 but was {angleY}");
+    }
+
+    private void PlaceTile(int x, int y, Tile tilePrefab)
+    {
+        var newTile = Instantiate<Tile>(tilePrefab, transform);
+        newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
+        newTile.Spawned = true;
+        // todo скрипт Tile вроде бы не нужен            
+        spawnedTiles[x, y] = newTile;
+
+        placedTilesCount++;
     }
 
     private bool IsTilePossible(int x, int y, Tile tile)
@@ -111,126 +251,81 @@ public class GeneratorWFC : MonoBehaviour
         return true;
     }
 
-    private bool GenerateAllPossibleTiles()
+    /// <summary>
+    /// Определить координаты с минимальной энтропией
+    /// </summary>
+    private Vector2Int DefineMinEntropyPosition(out float minEntropy)
     {
-        var maxIterations = MapSize.x * MapSize.y;
-        var iterations = 0;
-        int backtracks = 0;
+        minEntropy = 0f;
+        Vector2Int min_entropy_coords = Vector2Int.zero;
 
-        while (iterations++ < maxIterations)
-        {
-
-            var maxInnerIteration = 500;
-            var innerIteration = 0;
-
-            while (recalcPossibleTilesQueue.Count > 0 && innerIteration++ < maxInnerIteration)
-            {
-                var position = recalcPossibleTilesQueue.Dequeue();
-
-                var possibleTilesHere = possibleTiles[position.x, position.y];
-                int countRemoved = possibleTilesHere.RemoveAll(t => !IsTilePossible(position.x, position.y, t));
-
-                if (countRemoved > 0)
-                    AddNeighborsToQueue(position);          
-
-                if (possibleTilesHere.Count == 0)
-                {
-                    Debug.LogError("possibleTilesHereNew.Count = 0");
-                    // обновляем по новой, мб выйдет другой вариант
-                    possibleTilesHere.AddRange(TilePrefabs);
-                    if (position.x + 1 < MapSize.x)
-                        possibleTiles[position.x + 1, position.y] = new List<Tile>(TilePrefabs);
-
-                    if (position.x - 1 >= 0)
-                        possibleTiles[position.x - 1, position.y] = new List<Tile>(TilePrefabs);
-
-                    if (position.y + 1 < MapSize.y)
-                        possibleTiles[position.x, position.y + 1] = new List<Tile>(TilePrefabs);
-
-                    if (position.y - 1 >= 0)
-                        possibleTiles[position.x, position.y - 1] = new List<Tile>(TilePrefabs);
-
-                    AddNeighborsToQueue(position);
-                    backtracks++;
-                }
-            }
-
-            if (innerIteration == maxInnerIteration)
-                break;
-
-            // координаты с максимально возможным количеством тайлов
-            var maxTilesCount = possibleTiles[0, 0];
-            var maxTileCountPosition = new Vector2Int(0, 0);
-            for (int x = 0; x < MapSize.x; x++)
-            {
-                for (int y = 0; y < MapSize.y; y++)
-                {
-                    if (possibleTiles[x, y].Count > maxTilesCount.Count)
-                    {
-                        maxTilesCount = possibleTiles[x, y];
-                        maxTileCountPosition = new Vector2Int(x, y);
-                    }
-                }
-            }
-
-            if (maxTilesCount.Count == 1)
-            {
-                Debug.Log($"Generated for {iterations} iterations, with {backtracks} backtracks");
-                return true;
-            }
-
-            var tileCollapse = GetRandomTile(maxTilesCount);
-            possibleTiles[maxTileCountPosition.x, maxTileCountPosition.y] = new List<Tile>() { tileCollapse };
-            AddNeighborsToQueue(maxTileCountPosition);
-        }
-        Debug.Log($"Failed, run out of iterations with {backtracks} backtracks");
-        return false;
-    }
-    
-    private void/*IEnumerator*/ PlaceAllTiles()
-    {
         for (int x = 0; x < MapSize.x; x++)
         {
             for (int y = 0; y < MapSize.y; y++)
             {
-                // здесь 
-                var availableTiles = possibleTiles[x, y];
-                // Debug.Log($"[{x},{y}] availableTiles.Count {availableTiles.Count}");
-
-                if (availableTiles.Count == 0)
+                if (possibleTiles[x, y].Count == 1)
                     continue;
 
-                var tilePrefab = GetRandomTile(availableTiles);
+                // Добавляем небольшой шум для небольшого смешивания
+                var entropy = CalcShannonEntropy(x, y);
+                var entropyPlusNoise = entropy - (Random.value / 1000);
 
-                var newTile = Instantiate<Tile>(tilePrefab, transform);
-                newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
-                newTile.Spawned = true;
-                // todo скрипт Tile вроде бы не нужен            
-                spawnedTiles[x, y] = newTile;
-
-                // yield return new WaitForSeconds(spawnDelay);
+                if (minEntropy == 0 || entropyPlusNoise < minEntropy)
+                {
+                    minEntropy = entropyPlusNoise;
+                    min_entropy_coords = new Vector2Int(x, y);
+                }
             }
         }
+        return min_entropy_coords;
     }
 
-    //private bool IsPossibleTileHere(Vector2Int position)
-    //{
-    //    var requierColors = GetColorsInfo(position.x, position.y);
-    //}
+    /// <summary>
+    /// Вычислить энтропию по формуле Шеннона (чем больше разницы весов - тем меньше энтропия)
+    /// </summary>    
+    private float CalcShannonEntropy(int x, int y)
+    {
+        var sumOfWeights = 0;
+        var sumOfWeightLogWeights = 0f;
+        foreach (var tile in possibleTiles[x, y])
+        {
+            var weight = tile.Weight;
+            sumOfWeights += weight;
+            sumOfWeightLogWeights += weight * Mathf.Log(weight);
+        }
+
+        var result = Mathf.Log(sumOfWeights) - (sumOfWeightLogWeights / sumOfWeights);
+       // Debug.Log($"[{x},{y}] = {possibleTiles[x, y].Count} | {result}");
+        return result;
+    }
 
     private void AddNeighborsToQueue(Vector2Int position)
     {
+        // не нужно добавлять в очередь, где уже один тайл
+
         if (position.x + 1 < MapSize.x)
-            recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x + 1, position.y));
+        {
+            if (possibleTiles[position.x + 1, position.y].Count != 1)
+                recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x + 1, position.y));
+        }
 
         if (position.x - 1 >= 0)
-            recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x - 1, position.y));
+        {
+            if (possibleTiles[position.x - 1, position.y].Count != 1)
+                recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x - 1, position.y));
+        }
 
         if (position.y + 1 < MapSize.y)
-            recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x, position.y + 1));
+        {
+            if (possibleTiles[position.x, position.y + 1].Count != 1)
+                recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x, position.y + 1));
+        }
 
         if (position.y - 1 >= 0)
-            recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x, position.y - 1));
+        {
+            if (possibleTiles[position.x, position.y - 1].Count != 1)
+                recalcPossibleTilesQueue.Enqueue(new Vector2Int(position.x, position.y - 1));
+        }
     }
 
 
@@ -238,10 +333,30 @@ public class GeneratorWFC : MonoBehaviour
     {
         foreach (var item in spawnedTiles)
         {
-            if (item != null)
+            if (item != null && item.Predefined == false)
                 Destroy(item.gameObject);
         }
         spawnedTiles = new Tile[MapSize.x, MapSize.y];
+
+        PrepareToGenerate();
+    }
+
+    private void PrepareToGenerate()
+    {
+        possibleTiles = new List<Tile>[MapSize.x, MapSize.y];
+
+        needPlaceCount = MapSize.x * MapSize.y;
+        placedTilesCount = 0;
+
+        for (int x = 0; x < MapSize.x; x++)
+        {
+            for (int y = 0; y < MapSize.y; y++)
+            {
+                possibleTiles[x, y] = new List<Tile>(TilePrefabs);
+            }
+        }
+
+        recalcPossibleTilesQueue.Clear();
     }
 
     private Tile GetRandomTile(List<Tile> tiles)
@@ -252,13 +367,8 @@ public class GeneratorWFC : MonoBehaviour
         // c учетом веса
         if (useWeight)
         {
-            var weightSum = 0;
-            foreach (var tile in tiles)
-            {
-                weightSum += tile.Weight;
-            }
-
-            var randomValue = UnityEngine.Random.Range(0, weightSum + 1);
+            var totalSum = tiles.Sum(t => t.Weight);
+            var randomValue = UnityEngine.Random.Range(0, totalSum + 1);
 
             var sum = 0f;
             foreach (var tile in tiles)
@@ -279,4 +389,50 @@ public class GeneratorWFC : MonoBehaviour
         }
     }
 
+    #region Методы для логирования
+
+    private void LogPossibleVariants()
+    {
+        var sb = new StringBuilder();
+        for (int x = 0; x < MapSize.x; x++)
+        {
+            for (int y = 0; y < MapSize.y; y++)
+            {
+                sb.Append(possibleTiles[x, y].Count.ToString("D2") + " ");
+            }
+            sb.AppendLine();
+        }
+        Debug.Log(sb.ToString());
+    }
+
+    private void LogSpawnPossibleVariants()
+    {
+        for (int x = 0; x < MapSize.x; x++)
+        {
+            for (int y = 0; y < MapSize.y; y++)
+            {
+                if (possibleTiles[x, y].Count > 5 || possibleTiles[x, y].Count == 1)
+                    continue;
+
+                var count = 1;
+                foreach (var tile in possibleTiles[x, y])
+                {
+                    var newTile = Instantiate<Tile>(tile, transform);
+                    newTile.transform.position = new Vector3(x * TileSize, count * TileSize, y * TileSize);
+                    newTile.Spawned = true;
+                    // todo скрипт Tile вроде бы не нужен            
+                    spawnedTiles[x, y] = newTile;
+
+                    count++;
+                }
+            }
+        }
+    }
+
+    #endregion
+
+    private void OnDrawGizmos()
+    {
+        Generator.DrawGizmosArea(MapSize, TileSize, this.transform.position);
+    }
 }

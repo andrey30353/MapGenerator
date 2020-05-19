@@ -237,4 +237,12 @@ public class Generator : MonoBehaviour
         var lastTile = tiles[tiles.Count - 1];
         return lastTile;
     }
+
+    public static void DrawGizmosArea(Vector2Int mapSize, int tileSize, Vector3 position)
+    {
+        Gizmos.color = Color.green;
+        var center = new Vector3(mapSize.x / 2 * tileSize, tileSize / 2, mapSize.y / 2 * tileSize) + position;
+        var size = new Vector3(mapSize.x * tileSize, tileSize, mapSize.y * tileSize);
+        Gizmos.DrawWireCube(center, size);
+    }
 }
