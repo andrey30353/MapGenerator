@@ -18,8 +18,8 @@ public class GeneratorWFC : MonoBehaviour
 
     public Transform RotationVariantsContainer;
 
-    [Range(0.01f, 1f)]
-    [SerializeField] private float spawnDelay = 0.1f;
+    [Range(0f, 1f)]
+    [SerializeField] private float spawnDelay = 0f;
 
     public List<Tile> TilePrefabs;
 
@@ -65,7 +65,8 @@ public class GeneratorWFC : MonoBehaviour
         if (seed != -1)
             Random.InitState(seed);
 
-        ProcessTexture();
+        if(_texture != null)
+            ProcessTexture();
 
         ProcessPredefinedTiles();
 
@@ -143,8 +144,11 @@ public class GeneratorWFC : MonoBehaviour
             PlaceTile(minEntropyPosition.x, minEntropyPosition.y, tileCollapse);
 
             AddNeighborsToQueue(minEntropyPosition);
-           
-            yield return new WaitForSeconds(spawnDelay);
+
+            if (spawnDelay == 0)
+                yield return new WaitForEndOfFrame();
+            else
+                yield return new WaitForSeconds(spawnDelay);
         }
         Debug.Log($"Failed, run out of iterations {iterations}");
         // return false;

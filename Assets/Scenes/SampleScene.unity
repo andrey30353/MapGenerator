@@ -347,72 +347,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 285657194}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &288302083
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 288302085}
-  - component: {fileID: 288302084}
-  m_Layer: 0
-  m_Name: GeneratorByTextureWFC
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 4294967295
-  m_IsActive: 0
---- !u!114 &288302084
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 288302083}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 947e75989f57f4d4bb25c476caf97abe, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _texture: {fileID: 2800000, guid: 82befaa6520fe964197fcf934e1e6156, type: 3}
-  TileSize: 10
-  seed: 0
-  useWeight: 1
-  RotationVariantsContainer: {fileID: 1258544653}
-  spawnDelay: 0.1
-  _colorTilePriority: []
-  TilePrefabs:
-  - {fileID: 1805588963}
-  - {fileID: 1874738071}
-  - {fileID: 1748725185}
-  - {fileID: 1541484370}
-  - {fileID: 108893503}
-  - {fileID: 1145854942}
-  - {fileID: 686670003}
-  - {fileID: 219711081}
-  - {fileID: 330558687}
-  - {fileID: 1033322936}
-  - {fileID: 1276552325}
-  - {fileID: 766617810}
-  - {fileID: 454381799}
-  - {fileID: 814753076}
-  - {fileID: 1513176215}
---- !u!4 &288302085
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 288302083}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &330558686 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5210520276922023206, guid: d5da34687c40b8444a158b6d89b306ad,
@@ -541,7 +475,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 1.4568e-41, z: 0, w: 0}
+  m_BoundingSphereOverride: {x: 0, y: 1.4484e-41, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
   m_ShadowRadius: 0
   m_ShadowAngle: 0
@@ -891,13 +825,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: faed40ec7628a554e850cf9a864f9a97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _texture: {fileID: 2800000, guid: e0710fc188dfc4345ac0e4eb17ddf322, type: 3}
+  _texture: {fileID: 0}
   MapSize: {x: 10, y: 10}
   TileSize: 10
   seed: 0
   useWeight: 1
   RotationVariantsContainer: {fileID: 1258544653}
-  spawnDelay: 0.1
+  spawnDelay: 0
   TilePrefabs:
   - {fileID: 1805588963}
   - {fileID: 1874738071}
@@ -1010,7 +944,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1739414755
 PrefabInstance:
@@ -1271,7 +1205,7 @@ Transform:
   - {fileID: 1513176214}
   - {fileID: 1258544653}
   m_Father: {fileID: 0}
-  m_RootOrder: 5
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &16824282284944120
 PrefabInstance:
