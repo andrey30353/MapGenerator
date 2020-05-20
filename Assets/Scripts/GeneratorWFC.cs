@@ -291,7 +291,7 @@ public class GeneratorWFC : MonoBehaviour
         // смотрим вокруг себя во всех направлениях
         // цвет сзади тайла должен быть равен цвету спереди у сзади стоящего тайла
 
-        var result = new ColorsData();
+        var result = ScriptableObject.CreateInstance<ColorsData>();
         if (y - 1 >= 0 && spawnedTiles[x, y - 1] != null)
         {
             result.BackColor0 = spawnedTiles[x, y - 1].ForwardColor0;

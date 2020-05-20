@@ -21,18 +21,18 @@ public class ColorsData : ScriptableObject
     public Color ForwardColor0;
     public Color ForwardColor1;
 
-    [Space]   
+    [Space]
     public Color RightColor0;
     public Color RightColor1;
 
-    [Space] 
+    [Space]
     public Color BackColor0;
     public Color BackColor1;
 
-    [Space] 
+    [Space]
     public Color LeftColor0;
     public Color LeftColor1;
-       
+
     [Header("Цвет для генерации по текстуре")]
     public Color BaseColor;
 
@@ -41,7 +41,7 @@ public class ColorsData : ScriptableObject
         var tempForwardColor0 = ForwardColor0;
         var tempForwardColor1 = ForwardColor1;
 
-      //  var result = ScriptableObject.Instantiate(this);
+        var newColorsData = ScriptableObject.CreateInstance<ColorsData>();
 
         switch (rotation)
         {
@@ -49,63 +49,57 @@ public class ColorsData : ScriptableObject
                 return this;
 
             case RotationType._90:
-                return new ColorsData
-                {
-                    ForwardColor0 = LeftColor0,
-                    ForwardColor1 = LeftColor1,
+                newColorsData.ForwardColor0 = LeftColor0;
+                newColorsData.ForwardColor1 = LeftColor1;
 
-                    LeftColor0 = BackColor1 != Color.clear ? BackColor1 : BackColor0,
-                    LeftColor1 = BackColor1 != Color.clear ? BackColor0 : Color.clear,
+                newColorsData.LeftColor0 = BackColor1 != Color.clear ? BackColor1 : BackColor0;
+                newColorsData.LeftColor1 = BackColor1 != Color.clear ? BackColor0 : Color.clear;
 
-                    BackColor0 = RightColor0,
-                    BackColor1 = RightColor1,
+                newColorsData.BackColor0 = RightColor0;
+                newColorsData.BackColor1 = RightColor1;
 
-                    RightColor0 = tempForwardColor1 != Color.clear ? tempForwardColor1 : tempForwardColor0,
-                    RightColor1 = tempForwardColor1 != Color.clear ? tempForwardColor0 : Color.clear,
+                newColorsData.RightColor0 = tempForwardColor1 != Color.clear ? tempForwardColor1 : tempForwardColor0;
+                newColorsData.RightColor1 = tempForwardColor1 != Color.clear ? tempForwardColor0 : Color.clear;
 
-                    BaseColor = this.BaseColor
-                };       
-                
+                newColorsData.BaseColor = this.BaseColor;
+                return newColorsData;
+
             case RotationType._180:
 
                 var tempRightColor0 = RightColor0;
                 var tempRightColor1 = RightColor1;
 
-                return new ColorsData
-                {
-                    ForwardColor0 = BackColor1 != Color.clear ? BackColor1 : BackColor0,
-                    ForwardColor1 = BackColor1 != Color.clear ? BackColor0 : Color.clear,
+                newColorsData.ForwardColor0 = BackColor1 != Color.clear ? BackColor1 : BackColor0;
+                newColorsData.ForwardColor1 = BackColor1 != Color.clear ? BackColor0 : Color.clear;
 
-                    RightColor0 = LeftColor1 != Color.clear ? LeftColor1 : LeftColor0,
-                    RightColor1 = LeftColor1 != Color.clear ? LeftColor0 : Color.clear,                                       
+                newColorsData.RightColor0 = LeftColor1 != Color.clear ? LeftColor1 : LeftColor0;
+                newColorsData.RightColor1 = LeftColor1 != Color.clear ? LeftColor0 : Color.clear;
 
-                    BackColor0 = tempForwardColor1 != Color.clear ? tempForwardColor1 : tempForwardColor0,
-                    BackColor1 = tempForwardColor1 != Color.clear ? tempForwardColor0 : Color.clear,
+                newColorsData.BackColor0 = tempForwardColor1 != Color.clear ? tempForwardColor1 : tempForwardColor0;
+                newColorsData.BackColor1 = tempForwardColor1 != Color.clear ? tempForwardColor0 : Color.clear;
 
-                    LeftColor0 = tempRightColor1 != Color.clear ? tempRightColor1 : tempRightColor0,
-                    LeftColor1 = tempRightColor1 != Color.clear ? tempRightColor0 : Color.clear,
+                newColorsData.LeftColor0 = tempRightColor1 != Color.clear ? tempRightColor1 : tempRightColor0;
+                newColorsData.LeftColor1 = tempRightColor1 != Color.clear ? tempRightColor0 : Color.clear;
 
-                    BaseColor = this.BaseColor
-                };
-               
+                newColorsData.BaseColor = this.BaseColor;
+                return newColorsData;
+
             case RotationType._270:
-             
-                return new ColorsData
-                {
-                    ForwardColor0 = RightColor1 != Color.clear ? RightColor1 : RightColor0,
-                    ForwardColor1 = RightColor1 != Color.clear ? RightColor0 : Color.clear,
 
-                    RightColor0 = BackColor0,
-                    RightColor1 = BackColor1,
+                newColorsData.ForwardColor0 = RightColor1 != Color.clear ? RightColor1 : RightColor0;
+                newColorsData.ForwardColor1 = RightColor1 != Color.clear ? RightColor0 : Color.clear;
 
-                    BackColor0 = LeftColor1 != Color.clear ? LeftColor1 : LeftColor0,
-                    BackColor1 = LeftColor1 != Color.clear ? LeftColor0 : Color.clear,
+                newColorsData.RightColor0 = BackColor0;
+                newColorsData.RightColor1 = BackColor1;
 
-                    LeftColor0 = tempForwardColor0,
-                    LeftColor1 = tempForwardColor1,
+                newColorsData.BackColor0 = LeftColor1 != Color.clear ? LeftColor1 : LeftColor0;
+                newColorsData.BackColor1 = LeftColor1 != Color.clear ? LeftColor0 : Color.clear;
 
-                    BaseColor = this.BaseColor
-                };              
+                newColorsData.LeftColor0 = tempForwardColor0;
+                newColorsData.LeftColor1 = tempForwardColor1;
+
+                newColorsData.BaseColor = this.BaseColor;
+                return newColorsData;
 
             default:
                 throw new ArgumentException("Unknown rotation");
@@ -118,7 +112,7 @@ public class ColorsData : ScriptableObject
         Debug.Log($"Forward = {ForwardColor0}");
         Debug.Log($"Right = {RightColor0}");
         Debug.Log($"Back = {BackColor0}");
-        Debug.Log($"Left = {LeftColor0}");  
+        Debug.Log($"Left = {LeftColor0}");
     }
 
     [ContextMenu("Определить основной цвет")]
