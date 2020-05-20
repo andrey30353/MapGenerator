@@ -61,7 +61,9 @@ public class ColorsData : ScriptableObject
                     BackColor1 = RightColor1,
 
                     RightColor0 = tempForwardColor1 != Color.clear ? tempForwardColor1 : tempForwardColor0,
-                    RightColor1 = tempForwardColor1 != Color.clear ? tempForwardColor0 : Color.clear                    
+                    RightColor1 = tempForwardColor1 != Color.clear ? tempForwardColor0 : Color.clear,
+
+                    BaseColor = this.BaseColor
                 };       
                 
             case RotationType._180:
@@ -81,7 +83,9 @@ public class ColorsData : ScriptableObject
                     BackColor1 = tempForwardColor1 != Color.clear ? tempForwardColor0 : Color.clear,
 
                     LeftColor0 = tempRightColor1 != Color.clear ? tempRightColor1 : tempRightColor0,
-                    LeftColor1 = tempRightColor1 != Color.clear ? tempRightColor0 : Color.clear
+                    LeftColor1 = tempRightColor1 != Color.clear ? tempRightColor0 : Color.clear,
+
+                    BaseColor = this.BaseColor
                 };
                
             case RotationType._270:
@@ -98,7 +102,9 @@ public class ColorsData : ScriptableObject
                     BackColor1 = LeftColor1 != Color.clear ? LeftColor0 : Color.clear,
 
                     LeftColor0 = tempForwardColor0,
-                    LeftColor1 = tempForwardColor1
+                    LeftColor1 = tempForwardColor1,
+
+                    BaseColor = this.BaseColor
                 };              
 
             default:

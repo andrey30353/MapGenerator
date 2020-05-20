@@ -66,8 +66,8 @@ public class Generator : MonoBehaviour
 
                 var position = tile.transform.position + Vector3.back * tileSize * 1.5f;
                 var newTilePrefab = Instantiate<Tile>(tile, position, Quaternion.identity, container);
-                newTilePrefab.name = tile.name + "_180";
-                newTilePrefab.Rotate(RotationType._180);
+                newTilePrefab.name = tile.name + "_90";
+                newTilePrefab.Rotate(RotationType._90);
                 newTilePrefabs.Add(newTilePrefab);
                 count++;
             }

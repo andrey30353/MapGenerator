@@ -6,6 +6,8 @@ using UnityEngine;
 
 public class GeneratorWFC : MonoBehaviour
 {
+    [SerializeField] private Texture2D _texture;
+
     public Vector2Int MapSize = new Vector2Int(10, 10);
 
     public int TileSize = 10;
@@ -32,10 +34,12 @@ public class GeneratorWFC : MonoBehaviour
     private int needPlaceCount;
 
     private Tile[] predefinedTiles;
-
-    // Start is called before the first frame update
+        
     private void Start()
     {
+        if(_texture != null)
+        MapSize = new Vector2Int(_texture.width, _texture.height);
+
         spawnedTiles = new Tile[MapSize.x, MapSize.y];
 
         Generator.CreateAllRotationVariants(TilePrefabs, TileSize, RotationVariantsContainer);
@@ -43,8 +47,7 @@ public class GeneratorWFC : MonoBehaviour
         predefinedTiles = GetComponentsInChildren<Tile>(false);
         CorrectColorsDataForPredefinedTiles(predefinedTiles);
     }
-
-    // Update is called once per frame
+   
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
@@ -53,19 +56,20 @@ public class GeneratorWFC : MonoBehaviour
 
             Clear();
                
-            StartCoroutine(Generate());
-            // Generate();
+            StartCoroutine(Generate());          
         }
     }
 
     private IEnumerator Generate()
     {
         if (seed != -1)
-            UnityEngine.Random.InitState(seed);
+            Random.InitState(seed);
+
+        ProcessTexture();
 
         ProcessPredefinedTiles();
 
-        if (placedTilesCount == 0)
+        if (_texture == null && placedTilesCount == 0)
         {
             var centerTile = GetRandomTile(TilePrefabs);
             var centerPosition = new Vector2Int(MapSize.x / 2, MapSize.y / 2);
@@ -76,16 +80,14 @@ public class GeneratorWFC : MonoBehaviour
         }       
 
         yield return GenerateAllPossibleTiles();      
-    }
-
-    
+    }       
 
     private IEnumerator GenerateAllPossibleTiles()
     {
         var maxIterations = MapSize.x * MapSize.y;
-        var iterations = 0;
-     
-        while (placedTilesCount < needPlaceCount ||  iterations < maxIterations)
+        var iterations = 0;      
+
+        while (placedTilesCount < needPlaceCount ||  iterations++ < maxIterations)
         {
             // Debug.Log($"placed/need = { placedTilesCount} / {needPlaceCount}");
             var maxInnerIteration = 500;
@@ -102,7 +104,9 @@ public class GeneratorWFC : MonoBehaviour
                 if (possibleTilesHere.Count == 0)
                 {
                     // Зашли в тупик
-                    Debug.LogError("Не получилось собрать карту");
+                    Debug.LogError($"Не получилось собрать карту ({position.x}:{position.y})");
+                    LogPossibleVariants();
+                    //break;
                     yield break;
                 }
 
@@ -116,8 +120,8 @@ public class GeneratorWFC : MonoBehaviour
                     AddNeighborsToQueue(position);               
             }
             // TODO: del
-            // LogSpawnPossibleVariants();
-            // LogPossibleVariants();
+            // LogSpawnPossibleVariants();          
+            //LogPossibleVariants();
 
             if (innerIteration == maxInnerIteration)
                 break;
@@ -132,15 +136,14 @@ public class GeneratorWFC : MonoBehaviour
                 yield break;//true;
             }
 
-            var tileCollapse = GetRandomTile(possibleTiles[minEntropyPosition.x, minEntropyPosition.y]);
+            var availableTiles = possibleTiles[minEntropyPosition.x, minEntropyPosition.y];   
+            var tileCollapse = GetRandomTile(availableTiles);
             possibleTiles[minEntropyPosition.x, minEntropyPosition.y] = new List<Tile>() { tileCollapse };
 
             PlaceTile(minEntropyPosition.x, minEntropyPosition.y, tileCollapse);
 
             AddNeighborsToQueue(minEntropyPosition);
-
-            iterations++;
-
+           
             yield return new WaitForSeconds(spawnDelay);
         }
         Debug.Log($"Failed, run out of iterations {iterations}");
@@ -215,6 +218,130 @@ public class GeneratorWFC : MonoBehaviour
 
         placedTilesCount++;
     }
+
+    #region by texture
+
+    private void ProcessTexture()
+    {
+        for (int x = 0; x < MapSize.x; x++)
+        {
+            for (int y = 0; y < MapSize.y; y++)
+            {
+                var pixelColor = _texture.GetPixel(x, y);
+
+                if (pixelColor.a == 0)
+                    continue;
+
+                // Debug.Log(pixelColor);
+
+                var availableTilesByColor = GetTilesByColor(pixelColor);
+
+                var availableTiles = AvailableTilesHere(x, y, availableTilesByColor);
+                // Debug.Log($"[{x},{y}] availableTiles.Count {availableTiles.Count}");
+
+                if (availableTiles.Count == 0)
+                {
+                    Debug.Log($"Нет тайлов с базовым цветом = {pixelColor}");
+                    continue;
+                }
+
+                var beforeAvailableCount = possibleTiles[x, y].Count;
+                possibleTiles[x, y] = availableTiles;
+
+                if (availableTiles.Count == 1)
+                {
+                    var tilePrefab = GetRandomTile(availableTiles);
+                    var newTile = Instantiate<Tile>(tilePrefab, transform);
+                    newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
+                    newTile.Spawned = true;
+                    // todo скрипт Tile вроде бы не нужен            
+                    spawnedTiles[x, y] = newTile;
+                }
+
+                if(availableTiles.Count < beforeAvailableCount)
+                {                   
+                    AddNeighborsToQueue(new Vector2Int(x, y));
+                }                  
+            }
+        }
+
+       // LogPossibleVariants();
+    }
+
+    private List<Tile> GetTilesByColor(Color color)
+    {
+        var result = TilePrefabs.Where(t => t.ColorsData.BaseColor == color).ToList();
+        return result;
+    }
+
+    private List<Tile> AvailableTilesHere(int x, int y, List<Tile> variants)
+    {
+        var colorsInfo = GetColorsInfo(x, y);
+        var availableTiles = GetTilesWithColors(colorsInfo, variants);
+        return availableTiles;
+    }
+
+    private ColorsData GetColorsInfo(int x, int y)
+    {
+        // определяем какие цвета должны быть у тайла
+        // смотрим вокруг себя во всех направлениях
+        // цвет сзади тайла должен быть равен цвету спереди у сзади стоящего тайла
+
+        var result = new ColorsData();
+        if (y - 1 >= 0 && spawnedTiles[x, y - 1] != null)
+        {
+            result.BackColor0 = spawnedTiles[x, y - 1].ForwardColor0;
+            result.BackColor1 = spawnedTiles[x, y - 1].ForwardColor1;
+        }
+
+        if (y + 1 < MapSize.y && spawnedTiles[x, y + 1] != null)
+        {
+            result.ForwardColor0 = spawnedTiles[x, y + 1].BackColor0;
+            result.ForwardColor1 = spawnedTiles[x, y + 1].BackColor1;
+        }
+
+        if (x - 1 >= 0 && spawnedTiles[x - 1, y] != null)
+        {
+            result.LeftColor0 = spawnedTiles[x - 1, y].RightColor0;
+            result.LeftColor1 = spawnedTiles[x - 1, y].RightColor1;
+        }
+
+        if (x + 1 < MapSize.x && spawnedTiles[x + 1, y] != null)
+        {
+            result.RightColor0 = spawnedTiles[x + 1, y].LeftColor0;
+            result.RightColor1 = spawnedTiles[x + 1, y].LeftColor1;
+        }
+
+        return result;
+    }
+
+    private List<Tile> GetTilesWithColors(ColorsData colorInfo, List<Tile> variants)
+    {
+        IEnumerable<Tile> result = variants;
+        if (colorInfo.RightColor0 != Color.clear)
+        {
+            result = result.Where(t => t.RightColor0 == colorInfo.RightColor0 && t.RightColor1 == colorInfo.RightColor1);
+        }
+
+        if (colorInfo.LeftColor0 != Color.clear)
+        {
+            result = result.Where(t => t.LeftColor0 == colorInfo.LeftColor0 && t.LeftColor1 == colorInfo.LeftColor1);
+        }
+
+        if (colorInfo.ForwardColor0 != Color.clear)
+        {
+            result = result.Where(t => t.ForwardColor0 == colorInfo.ForwardColor0 && t.ForwardColor1 == colorInfo.ForwardColor1);
+        }
+
+        if (colorInfo.BackColor0 != Color.clear)
+        {
+            result = result.Where(t => t.BackColor0 == colorInfo.BackColor0 && t.BackColor1 == colorInfo.BackColor1);
+        }
+
+        return result.ToList();
+    }
+
+    #endregion
 
     private bool IsTilePossible(int x, int y, Tile tile)
     {
