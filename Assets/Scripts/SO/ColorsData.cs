@@ -141,22 +141,22 @@ public class ColorsData : ScriptableObject
 
     private void OnValidate()
     {
-        if (RightColor0.a == 0)
+        if (RightColor0 != Color.clear)
             RightColor0.a = 1;
         if (RightColor1 != Color.clear)
             RightColor1.a = 1;
 
-        if (LeftColor0.a == 0)
+        if (LeftColor0 != Color.clear)
             LeftColor0.a = 1;
         if (LeftColor1 != Color.clear)
             LeftColor1.a = 1;
 
-        if (ForwardColor0.a == 0)
+        if (ForwardColor0 != Color.clear)
             ForwardColor0.a = 1;
         if (ForwardColor1 != Color.clear)
             ForwardColor1.a = 1;
 
-        if (BackColor0.a == 0)
+        if (BackColor0 != Color.clear)
             BackColor0.a = 1;
         if (BackColor1 != Color.clear)
             BackColor1.a = 1;

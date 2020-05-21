@@ -21,6 +21,9 @@ public class Tile : MonoBehaviour
     // todo
     public int TileSize;
 
+    [Range(0.25f, 1)]
+    public float Height;
+
     [Range(1, 100)]
     public int Weight = 50;
        
@@ -47,22 +50,24 @@ public class Tile : MonoBehaviour
     public void OnValidate()
     {
         if (Spawned) return;       
+        
+        var minRotationVariants = DefineRotationVariants();
 
-        RotationVariants = DefineRotationVariants();    
+        if ((int)RotationVariants < (int)minRotationVariants)
+            RotationVariants = minRotationVariants;
+    }
+
+    public void Rotate(RotationType rotation)
+    {
+        transform.Rotate(Vector3.up, ((int)rotation) * 90);
+        ColorsData = ColorsData.Rotate(rotation);
     }
 
     [ContextMenu("Центрировать")]
     private void MoveTileToCenterParentTransform()
     {
         transform.GetChild(0).Translate(new Vector3(-TileSize * 0.5f, 0, -TileSize * 0.5f));
-    }
-
-    [ContextMenu("Повернуть")]
-    public void Rotate(RotationType rotation)
-    {      
-        transform.Rotate(Vector3.up, ((int)rotation) * 90);
-        ColorsData = ColorsData.Rotate(rotation); 
-    }
+    }  
 
     [ContextMenu("Назвать")]
     public void SetName()
@@ -81,17 +86,26 @@ public class Tile : MonoBehaviour
 
         if (RightColor0.a != 0 && !Palette.Colors.Contains(RightColor0))
             Palette.Colors.Add(RightColor0);
+        if (RightColor1.a != 0 && !Palette.Colors.Contains(RightColor1))
+            Palette.Colors.Add(RightColor1);
 
         if (LeftColor0.a != 0 && !Palette.Colors.Contains(LeftColor0))
             Palette.Colors.Add(LeftColor0);
+        if (LeftColor0.a != 1 && !Palette.Colors.Contains(LeftColor1))
+            Palette.Colors.Add(LeftColor1);
 
         if (ForwardColor0.a != 0 && !Palette.Colors.Contains(ForwardColor0))
             Palette.Colors.Add(ForwardColor0);
+        if (ForwardColor1.a != 1 && !Palette.Colors.Contains(ForwardColor1))
+            Palette.Colors.Add(ForwardColor1);
 
         if (BackColor0.a != 0 && !Palette.Colors.Contains(BackColor0))
             Palette.Colors.Add(BackColor0);
+        if (BackColor1.a != 0 && !Palette.Colors.Contains(BackColor1))
+            Palette.Colors.Add(BackColor1);
     }
 
+    [ContextMenu("Определить варианты поворота")]
     private RotationVariants DefineRotationVariants()
     {
         if (RightColor0 == LeftColor0 

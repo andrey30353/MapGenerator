@@ -45,12 +45,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TileSize: 10
+  Height: 0.25
   Weight: 50
   ColorsData: {fileID: 11400000, guid: f263e64b33cf9064090875b27933dad2, type: 2}
   RotationVariants: 1
-  RotationType: 0
   Palette: {fileID: 11400000, guid: 8de0ffdebcefd9246822fb40a7a01bcf, type: 2}
   Spawned: 0
+  Predefined: 0
 --- !u!1001 &3532408795159117483
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -61,7 +62,7 @@ PrefabInstance:
     - target: {fileID: -4216859302048453862, guid: 5cdd02dbccb977f44b07e9d8f2fa65c3,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -5
       objectReference: {fileID: 0}
     - target: {fileID: -4216859302048453862, guid: 5cdd02dbccb977f44b07e9d8f2fa65c3,
         type: 3}
@@ -71,7 +72,7 @@ PrefabInstance:
     - target: {fileID: -4216859302048453862, guid: 5cdd02dbccb977f44b07e9d8f2fa65c3,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -5
       objectReference: {fileID: 0}
     - target: {fileID: -4216859302048453862, guid: 5cdd02dbccb977f44b07e9d8f2fa65c3,
         type: 3}
