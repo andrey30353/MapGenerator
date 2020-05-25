@@ -3,12 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class GeneratorWFC : MonoBehaviour
 {
     [SerializeField] private Texture2D _texture;
 
     public Vector2Int MapSize = new Vector2Int(10, 10);
+
+    [SerializeField] private float _heightThreshold;
+    [SerializeField] private int _maxHeight;
 
     public int TileSize = 10;
 
@@ -23,31 +27,49 @@ public class GeneratorWFC : MonoBehaviour
 
     public List<Tile> TilePrefabs;
 
+    [FormerlySerializedAs("AdditionalTilePrefabs")]
+    public List<Tile> TransitionsTilePrefabs;
+
     private Tile[,] spawnedTiles;
+    private Tile[,] spawnedTransitionTiles;
 
     // двумерный массив списков (в каждой клеточке - список возможных тайлов)
     private List<Tile>[,] possibleTiles;
+    private List<Tile>[,] possibleTransitionTiles;
 
     private Queue<Vector2Int> recalcPossibleTilesQueue = new Queue<Vector2Int>();
+    private Queue<Vector2Int> recalcPossibleTransitionTilesQueue = new Queue<Vector2Int>();
 
     private int placedTilesCount = 0;
     private int needPlaceCount;
 
     private Tile[] predefinedTiles;
-        
+
+    private float _minTileHeight;
+    private float _maxTileHeight;
+
+    // карта высот
+    private float[,] _heightsMap;
+
     private void Start()
     {
-        if(_texture != null)
-        MapSize = new Vector2Int(_texture.width, _texture.height);
+        if (_texture != null)
+            MapSize = new Vector2Int(_texture.width, _texture.height);
 
         spawnedTiles = new Tile[MapSize.x, MapSize.y];
 
+        //spawnedTransitionTiles = new Tile[MapSize.x, MapSize.y];
+
         Generator.CreateAllRotationVariants(TilePrefabs, TileSize, RotationVariantsContainer);
+
+        //Generator.CreateAllRotationVariants(TransitionsTilePrefabs, TileSize, RotationVariantsContainer);
 
         predefinedTiles = GetComponentsInChildren<Tile>(false);
         CorrectColorsDataForPredefinedTiles(predefinedTiles);
+
+        //DefineTileHeights();
     }
-   
+
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
@@ -55,8 +77,8 @@ public class GeneratorWFC : MonoBehaviour
             StopAllCoroutines();
 
             Clear();
-               
-            StartCoroutine(Generate());          
+
+            StartCoroutine(Generate());
         }
     }
 
@@ -65,7 +87,7 @@ public class GeneratorWFC : MonoBehaviour
         if (seed != -1)
             Random.InitState(seed);
 
-        if(_texture != null)
+        if (_texture != null)
             ProcessTexture();
 
         ProcessPredefinedTiles();
@@ -76,19 +98,21 @@ public class GeneratorWFC : MonoBehaviour
             var centerPosition = new Vector2Int(MapSize.x / 2, MapSize.y / 2);
             possibleTiles[centerPosition.x, centerPosition.y] = new List<Tile> { centerTile };
 
-            PlaceTile(centerPosition.x, centerPosition.y, centerTile);            
+            PlaceTile(centerPosition.x, centerPosition.y, centerTile);
             AddNeighborsToQueue(centerPosition);
-        }       
+        }
 
-        yield return GenerateAllPossibleTiles();      
-    }       
+        yield return GenerateAllPossibleTiles();
+
+        //yield return GenerateAllTranstionPossibleTiles();
+    }
 
     private IEnumerator GenerateAllPossibleTiles()
     {
         var maxIterations = MapSize.x * MapSize.y;
-        var iterations = 0;      
+        var iterations = 0;
 
-        while (placedTilesCount < needPlaceCount ||  iterations++ < maxIterations)
+        while (placedTilesCount < needPlaceCount || iterations++ < maxIterations)
         {
             // Debug.Log($"placed/need = { placedTilesCount} / {needPlaceCount}");
             var maxInnerIteration = 500;
@@ -98,7 +122,7 @@ public class GeneratorWFC : MonoBehaviour
             {
                 var position = recalcPossibleTilesQueue.Dequeue();
 
-                var possibleTilesHere = possibleTiles[position.x, position.y];               
+                var possibleTilesHere = possibleTiles[position.x, position.y];
                 int countRemoved = possibleTilesHere.RemoveAll(t => !IsTilePossible(position.x, position.y, t));
 
                 // TODO:
@@ -118,7 +142,7 @@ public class GeneratorWFC : MonoBehaviour
                 }
 
                 if (countRemoved > 0)
-                    AddNeighborsToQueue(position);               
+                    AddNeighborsToQueue(position);
             }
             // TODO: del
             // LogSpawnPossibleVariants();          
@@ -130,14 +154,14 @@ public class GeneratorWFC : MonoBehaviour
             // координаты с минимальной энтропией
             var minEntropyPosition = DefineMinEntropyPosition(out var minEntropy);
             // Debug.Log("minEntropyPosition  = " + minEntropyPosition);
-            
+
             if (minEntropy == 0)
             {
                 Debug.Log($"Generated for {iterations} iterations");
                 yield break;//true;
             }
 
-            var availableTiles = possibleTiles[minEntropyPosition.x, minEntropyPosition.y];   
+            var availableTiles = possibleTiles[minEntropyPosition.x, minEntropyPosition.y];
             var tileCollapse = GetRandomTile(availableTiles);
             possibleTiles[minEntropyPosition.x, minEntropyPosition.y] = new List<Tile>() { tileCollapse };
 
@@ -152,13 +176,13 @@ public class GeneratorWFC : MonoBehaviour
         }
         Debug.Log($"Failed, run out of iterations {iterations}");
         // return false;
-    }
+    }          
 
     // TODO
     private void ProcessPredefinedTiles()
-    {     
+    {
         foreach (var tile in predefinedTiles)
-        {           
+        {
             tile.Predefined = true;
 
             var positionX = (int)tile.transform.position.x / TileSize;
@@ -166,7 +190,7 @@ public class GeneratorWFC : MonoBehaviour
 
             possibleTiles[positionX, positionY] = new List<Tile>() { tile };
             spawnedTiles[positionX, positionY] = tile;
-            tile.Spawned = true;            
+            tile.Spawned = true;
 
             placedTilesCount++;
         }
@@ -177,7 +201,7 @@ public class GeneratorWFC : MonoBehaviour
             var positionY = (int)tile.transform.position.z / TileSize;
 
             AddNeighborsToQueue(new Vector2Int(positionX, positionY));
-        }       
+        }
     }
 
     private void CorrectColorsDataForPredefinedTiles(Tile[] predefinedTiles)
@@ -188,7 +212,7 @@ public class GeneratorWFC : MonoBehaviour
             var angleY = Mathf.RoundToInt(tile.transform.eulerAngles.y);
             if (angleY != 0)
             {
-              //  Debug.Log("angleY = " + angleY);
+                //  Debug.Log("angleY = " + angleY);
                 var rotationType = AngleToRotationType(angleY);
                 tile.ColorsData = tile.ColorsData.Rotate(rotationType);
             }
@@ -212,10 +236,23 @@ public class GeneratorWFC : MonoBehaviour
         throw new System.ArgumentException($"{nameof(angleY)} should be 0/90/180/270 but was {angleY}");
     }
 
+    int randomHeight = 0;
     private void PlaceTile(int x, int y, Tile tilePrefab)
     {
         var newTile = Instantiate<Tile>(tilePrefab, transform);
-        newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
+
+        /*randomHeight = 0;
+        if (randomHeight == 0  || Random.value > 0.9f)
+        {
+            randomHeight = UnityEngine.Random.Range(1, _maxHeight + 1);
+        }       
+       
+        var height = randomHeight * _heightThreshold;
+        if (height < tilePrefab.Height)
+            height = tilePrefab.Height;
+        var positionY = height - tilePrefab.Height;*/
+        newTile.transform.position = new Vector3(x * TileSize, /*positionY * TileSize*/0, y * TileSize);
+
         newTile.Spawned = true;
         // todo скрипт Tile вроде бы не нужен            
         spawnedTiles[x, y] = newTile;
@@ -262,14 +299,14 @@ public class GeneratorWFC : MonoBehaviour
                     spawnedTiles[x, y] = newTile;
                 }
 
-                if(availableTiles.Count < beforeAvailableCount)
-                {                   
+                if (availableTiles.Count < beforeAvailableCount)
+                {
                     AddNeighborsToQueue(new Vector2Int(x, y));
-                }                  
+                }
             }
         }
 
-       // LogPossibleVariants();
+        // LogPossibleVariants();
     }
 
     private List<Tile> GetTilesByColor(Color color)
@@ -426,7 +463,7 @@ public class GeneratorWFC : MonoBehaviour
         }
 
         var result = Mathf.Log(sumOfWeights) - (sumOfWeightLogWeights / sumOfWeights);
-       // Debug.Log($"[{x},{y}] = {possibleTiles[x, y].Count} | {result}");
+        // Debug.Log($"[{x},{y}] = {possibleTiles[x, y].Count} | {result}");
         return result;
     }
 
@@ -469,7 +506,16 @@ public class GeneratorWFC : MonoBehaviour
         }
         spawnedTiles = new Tile[MapSize.x, MapSize.y];
 
+        /*foreach (var item in spawnedTransitionTiles)
+        {
+            if (item != null && item.Predefined == false)
+                Destroy(item.gameObject);
+        }
+        spawnedTransitionTiles = new Tile[MapSize.x, MapSize.y];
+        */
         PrepareToGenerate();
+
+        //PrepareToGenerateTransitions();
     }
 
     private void PrepareToGenerate()
@@ -488,7 +534,7 @@ public class GeneratorWFC : MonoBehaviour
         }
 
         recalcPossibleTilesQueue.Clear();
-    }
+    }   
 
     private Tile GetRandomTile(List<Tile> tiles)
     {
@@ -518,7 +564,7 @@ public class GeneratorWFC : MonoBehaviour
         {
             return tiles[UnityEngine.Random.Range(0, tiles.Count)];
         }
-    }
+    }    
 
     #region Методы для логирования
 
@@ -565,5 +611,199 @@ public class GeneratorWFC : MonoBehaviour
     private void OnDrawGizmos()
     {
         Generator.DrawGizmosArea(MapSize, TileSize, this.transform.position);
+    }
+
+
+    private void ProcessPossibleTransitonTiles()
+    {
+        for (int x = 0; x < MapSize.x; x++)
+        {
+            for (int y = 0; y < MapSize.y; y++)
+            {
+                bool hasTransiton = HasTransition(x, y);
+                if (!hasTransiton)
+                    continue;
+
+                var pixelColor = _texture.GetPixel(x, y);
+
+                if (pixelColor.a == 0)
+                    continue;
+
+                // Debug.Log(pixelColor);
+
+                var availableTilesByColor = GetTilesByColor(pixelColor);
+
+                var availableTiles = AvailableTilesHere(x, y, availableTilesByColor);
+                // Debug.Log($"[{x},{y}] availableTiles.Count {availableTiles.Count}");
+
+                if (availableTiles.Count == 0)
+                {
+                    Debug.Log($"Нет подходяхи тайлов перехода = {pixelColor}");
+                    continue;
+                }
+
+                var beforeAvailableCount = possibleTiles[x, y].Count;
+                possibleTiles[x, y] = availableTiles;
+
+                if (availableTiles.Count == 1)
+                {
+                    var tilePrefab = GetRandomTile(availableTiles);
+                    var newTile = Instantiate<Tile>(tilePrefab, transform);
+                    newTile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
+                    newTile.Spawned = true;
+                    // todo скрипт Tile вроде бы не нужен            
+                    spawnedTiles[x, y] = newTile;
+                }
+
+                if (availableTiles.Count < beforeAvailableCount)
+                {
+                    AddNeighborsToQueue(new Vector2Int(x, y));
+                }
+            }
+        }
+    }
+
+
+    private IEnumerator GenerateAllTranstionPossibleTiles()
+    {
+        var maxIterations = MapSize.x * MapSize.y;
+        var iterations = 0;
+
+        ProcessPossibleTransitonTiles();
+
+        while (/*placedTilesCount < needPlaceCount ||*/ iterations++ < maxIterations)
+        {
+            // Debug.Log($"placed/need = { placedTilesCount} / {needPlaceCount}");
+            var maxInnerIteration = 500;
+            var innerIteration = 0;
+
+            while (recalcPossibleTilesQueue.Count > 0 && innerIteration++ < maxInnerIteration)
+            {
+                var position = recalcPossibleTilesQueue.Dequeue();
+
+                var possibleTilesHere = possibleTiles[position.x, position.y];
+                int countRemoved = possibleTilesHere.RemoveAll(t => !IsTilePossible(position.x, position.y, t));
+
+                // TODO:
+                if (possibleTilesHere.Count == 0)
+                {
+                    // Зашли в тупик
+                    Debug.LogError($"Не получилось собрать карту ({position.x}:{position.y})");
+                    LogPossibleVariants();
+                    //break;
+                    yield break;
+                }
+
+                if (possibleTilesHere.Count == 1)
+                {
+                    // Debug.Log("1 tile");
+                    PlaceTile(position.x, position.y, possibleTilesHere[0]);
+                }
+
+                if (countRemoved > 0)
+                    AddNeighborsToQueue(position);
+            }
+            // TODO: del
+            // LogSpawnPossibleVariants();          
+            //LogPossibleVariants();
+
+            if (innerIteration == maxInnerIteration)
+                break;
+
+            // координаты с минимальной энтропией
+            var minEntropyPosition = DefineMinEntropyPosition(out var minEntropy);
+            // Debug.Log("minEntropyPosition  = " + minEntropyPosition);
+
+            if (minEntropy == 0)
+            {
+                Debug.Log($"Generated for {iterations} iterations");
+                yield break;//true;
+            }
+
+            var availableTiles = possibleTiles[minEntropyPosition.x, minEntropyPosition.y];
+            var tileCollapse = GetRandomTile(availableTiles);
+            possibleTiles[minEntropyPosition.x, minEntropyPosition.y] = new List<Tile>() { tileCollapse };
+
+            PlaceTile(minEntropyPosition.x, minEntropyPosition.y, tileCollapse);
+
+            AddNeighborsToQueue(minEntropyPosition);
+
+            if (spawnDelay == 0)
+                yield return new WaitForEndOfFrame();
+            else
+                yield return new WaitForSeconds(spawnDelay);
+        }
+        Debug.Log($"Failed, run out of iterations {iterations}");
+        // return false;
+    }
+
+    private bool HasTransition(int x, int y)
+    {
+        var currentTile = spawnedTiles[x, y];
+
+        if (x + 1 < MapSize.x)
+        {
+            if (spawnedTiles[x + 1, y].LevelHeight != currentTile.LevelHeight)
+                return true;
+
+        }
+
+        if (x - 1 >= 0)
+        {
+            if (spawnedTiles[x - 1, y].LevelHeight != currentTile.LevelHeight)
+                return true;
+        }
+
+        if (y + 1 < MapSize.y)
+        {
+            if (spawnedTiles[x, y + 1].LevelHeight != currentTile.LevelHeight)
+                return true;
+        }
+
+        if (y - 1 >= 0)
+        {
+            if (spawnedTiles[x, y - 1].LevelHeight != currentTile.LevelHeight)
+                return true;
+        }
+
+        return false;
+
+    }
+
+    private void DefineTileHeights()
+    {
+        var minHeight = float.MaxValue;
+        var maxHeight = 0f;
+        foreach (var tile in TilePrefabs)
+        {
+            if (tile.Height < minHeight)
+                minHeight = tile.Height;
+
+            if (tile.Height > maxHeight)
+                maxHeight = tile.Height;
+        }
+
+        _minTileHeight = minHeight;
+        _maxTileHeight = maxHeight;
+
+        Debug.Log($"_minTileHeight = {_minTileHeight}; _maxTileHeight = {_maxTileHeight} ");
+    }
+
+    private void PrepareToGenerateTransitions()
+    {
+        possibleTransitionTiles = new List<Tile>[MapSize.x, MapSize.y];
+
+        // needPlaceCount = MapSize.x * MapSize.y;
+        // placedTilesCount = 0;
+
+        for (int x = 0; x < MapSize.x; x++)
+        {
+            for (int y = 0; y < MapSize.y; y++)
+            {
+                possibleTransitionTiles[x, y] = new List<Tile>(TransitionsTilePrefabs);
+            }
+        }
+
+        recalcPossibleTransitionTilesQueue.Clear();
     }
 }

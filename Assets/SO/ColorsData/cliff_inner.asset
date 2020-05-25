@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c6436b171c9e9584886416ec2f646378, type: 3}
-  m_Name: cliff_innerTop
+  m_Name: cliff_inner
   m_EditorClassIdentifier: 
   ForwardColor0: {r: 0, g: 0.8745099, b: 1, a: 1}
   ForwardColor1: {r: 1, g: 1, b: 1, a: 1}

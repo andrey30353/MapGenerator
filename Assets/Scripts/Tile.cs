@@ -45,7 +45,9 @@ public class Tile : MonoBehaviour
     public Color ForwardColor1 => ColorsData?.ForwardColor1 ?? Color.clear;
     public Color BackColor0 => ColorsData?.BackColor0 ?? Color.clear;
     public Color BackColor1 => ColorsData?.BackColor1 ?? Color.clear;
-       
+
+    public float LevelHeight => transform.position.y;
+
 
     public void OnValidate()
     {

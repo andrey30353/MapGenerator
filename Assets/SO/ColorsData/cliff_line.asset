@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c6436b171c9e9584886416ec2f646378, type: 3}
-  m_Name: cliff_cornerTop
+  m_Name: cliff_line
   m_EditorClassIdentifier: 
   ForwardColor0: {r: 0, g: 0, b: 0, a: 0}
   ForwardColor1: {r: 0, g: 0, b: 0, a: 0}
-  RightColor0: {r: 0, g: 0, b: 0, a: 0}
-  RightColor1: {r: 0, g: 0, b: 0, a: 0}
+  RightColor0: {r: 0, g: 0.8745099, b: 1, a: 1}
+  RightColor1: {r: 1, g: 1, b: 1, a: 1}
   BackColor0: {r: 0, g: 0.8745099, b: 1, a: 1}
-  BackColor1: {r: 1, g: 1, b: 1, a: 1}
+  BackColor1: {r: 0, g: 0, b: 0, a: 0}
   LeftColor0: {r: 0, g: 0.8745099, b: 1, a: 1}
   LeftColor1: {r: 1, g: 1, b: 1, a: 1}
-  BaseColor: {r: 1, g: 1, b: 1, a: 1}
+  BaseColor: {r: 0, g: 0.8745099, b: 1, a: 1}
